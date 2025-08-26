@@ -1,15 +1,16 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
 
 // --- データ定義 ---
 const vegetables = {
-  tomato: { name: 'トマト', feature: '明るく元気、ムードメーカー', comment: '太陽のように周りを照らすトマト！' },
-  goya: { name: 'ゴーヤ', feature: '苦味系、個性派', comment: 'クセのあるあなたはゴーヤタイプ！' },
-  carrot: { name: 'ニンジン', feature: '甘くて可愛い、順応性あり', comment: '見た目は可愛いけど中身は芯があるニンジン！' },
-  pumpkin: { name: 'カボチャ', feature: '変化球系、ユーモア重視', comment: '面白さ抜群、カボチャタイプ！' },
-  broccoli: { name: 'ブロッコリー', feature: '頑張り屋、少し硬派', comment: '健康志向で真面目なブロッコリー！' },
-  potato: { name: 'ジャガイモ', feature: '家庭的、安定型', comment: 'どこにいても安心感を与えるジャガイモ！' },
+  tomato: { name: 'トマト', icon: '/tomato_red.png', feature: '明るく元気、ムードメーカー', comment: '太陽のように周りを照らすトマト！' },
+  goya: { name: 'ゴーヤ', icon: '/goya.png', feature: '苦味系、個性派', comment: 'クセのあるあなたはゴーヤタイプ！' },
+  carrot: { name: 'ニンジン', icon: '/nijin.png', feature: '甘くて可愛い、順応性あり', comment: '見た目は可愛いけど中身は芯があるニンジン！' },
+  pumpkin: { name: 'カボチャ', icon: '/halloween_pumpkin3.png', feature: '変化球系、ユーモア重視', comment: '面白さ抜群、カボチャタイプ！' },
+  broccoli: { name: 'ブロッコリー', icon: '/broccoli.png', feature: '頑張り屋、少し硬派', comment: '健康志向で真面目なブロッコリー！' },
+  potato: { name: 'ジャガイモ', icon: '/jaga_me.png', feature: '家庭的、安定型', comment: 'どこにいても安心感を与えるジャガイモ！' },
 };
 
 const questions = [
@@ -65,13 +66,16 @@ const questions = [
 type VegetableType = keyof typeof vegetables;
 
 export default function Home() {
-  const [step, setStep] = useState('name'); // name, question, result
+  const [step, setStep] = useState('name'); // name, question, result, profile_input, profile_card
   const [name, setName] = useState('');
+  const [age, setAge] = useState('');
+  const [bloodType, setBloodType] = useState('');
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [scores, setScores] = useState<Record<VegetableType, number>>({
     tomato: 0, goya: 0, carrot: 0, pumpkin: 0, broccoli: 0, potato: 0
   });
   const [result, setResult] = useState<VegetableType | null>(null);
+  const profileCardRef = useRef<HTMLDivElement>(null);
 
   const handleNameSubmit = () => {
     if (name.trim()) {
@@ -106,18 +110,34 @@ export default function Home() {
         resultVegs.push(veg as VegetableType);
       }
     }
-    // 同点の場合はランダムで選択
     const finalResult = resultVegs[Math.floor(Math.random() * resultVegs.length)];
     setResult(finalResult);
+  };
+
+  const handleProfileCardSubmit = () => {
+    setStep('profile_card');
+  };
+
+  const handleDownload = () => {
+    if (profileCardRef.current) {
+      html2canvas(profileCardRef.current).then(canvas => {
+        const link = document.createElement('a');
+        link.download = 'profile-card.png';
+        link.href = canvas.toDataURL('image/png');
+        link.click();
+      });
+    }
   };
 
   const restart = () => {
     setStep('name');
     setName('');
+    setAge('');
+    setBloodType('');
     setCurrentQuestionIndex(0);
     setScores({ tomato: 0, goya: 0, carrot: 0, pumpkin: 0, broccoli: 0, potato: 0 });
     setResult(null);
-  }
+  };
 
   const renderContent = () => {
     switch (step) {
@@ -156,17 +176,57 @@ export default function Home() {
         return (
           <>
             <h1>診断結果</h1>
-            <div className="result-card">
+            <div>
               <h2>{name}さんは... <strong>{vegetable.name}</strong> タイプ！</h2>
+              <img src={vegetable.icon} alt={vegetable.name} width={400} height={500} />
               <p><strong>特徴：</strong>{vegetable.feature}</p>
               <p><strong>一言コメント：</strong>「{vegetable.comment}」</p>
             </div>
             <div className="share-buttons">
                 <a href={`https://twitter.com/intent/tweet?text=${shareText}`} target="_blank" rel="noopener noreferrer" className="btn share-btn">Xでシェア</a>
-                {/* 他のSNSボタンは後で追加 */}
             </div>
+            <button className="btn" onClick={() => setStep('profile_input')}>プロフィールカードを表示！</button>
             <button className="btn" onClick={restart}>もう一度診断する</button>
           </>
+        );
+      case 'profile_input':
+        return (
+            <>
+                <h2>プロフィール情報を入力</h2>
+                <input
+                    type="number"
+                    value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    placeholder="年齢"
+                />
+                <input
+                    type="text"
+                    value={bloodType}
+                    onChange={(e) => setBloodType(e.target.value)}
+                    placeholder="血液型"
+                />
+                <button className="btn" onClick={handleProfileCardSubmit}>カードを生成</button>
+            </>
+        );
+      case 'profile_card':
+        if (!result) return null;
+        const veg = vegetables[result];
+        return (
+            <>
+                <div ref={profileCardRef} className="profile-card">
+                    <h2>{name}さんのプロフィール</h2>
+                    <img src={veg.icon} alt={veg.name} width={200} height={200} />
+                    <p><strong>タイプ:</strong> {veg.name}</p>
+                    <p><strong>年齢:</strong> {age}歳</p>
+                    <p><strong>血液型:</strong> {bloodType}型</p>
+                    <p><strong>特徴:</strong> {veg.feature}</p>
+                    <p>「{veg.comment}」</p>
+                </div>
+                <div className="button-container">
+                    <button className="btn" onClick={handleDownload}>ダウンロード</button>
+                    <button className="btn" onClick={restart}>最初からやり直す</button>
+                </div>
+            </>
         );
       default:
         return null;
@@ -174,10 +234,8 @@ export default function Home() {
   };
 
   return (
-    <main>
-        <div className="container">
-            {renderContent()}
-        </div>
+    <main className="main-content">
+        {renderContent()}
     </main>
   );
 }
