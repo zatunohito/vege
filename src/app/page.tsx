@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import html2canvas from "html2canvas";
+import Image from "next/image";
 
 // --- データ定義 ---
 const vegetables = {
@@ -121,11 +122,12 @@ export default function Home() {
     script.crossOrigin = "anonymous";
     document.head.appendChild(script);
 
-    // insタグのadsbygoogle初期化
     try {
-       // @ts-ignore
+      // @ts-expect-error - adsbygoogle is added by external script
       (window.adsbygoogle = window.adsbygoogle || []).push({});
-    } catch (e) {}
+    } catch (error) {
+      console.error("AdSense error:", error);
+    }
   }, []);
 
   const handleNameSubmit = () => {
@@ -255,11 +257,12 @@ export default function Home() {
               <h2>
                 {name}さんは... <strong>{vegetable.name}</strong> タイプ！
               </h2>
-              <img
+              <Image
                 src={vegetable.icon}
                 alt={vegetable.name}
                 width={400}
                 height={500}
+                priority
               />
               <p>
                 <strong>特徴：</strong>
@@ -315,7 +318,13 @@ export default function Home() {
           <>
             <div ref={profileCardRef} className="profile-card">
               <h2>{name}さんのプロフィール</h2>
-              <img src={veg.icon} alt={veg.name} width={200} height={200} />
+              <Image
+                src={veg.icon}
+                alt={veg.name}
+                width={200}
+                height={200}
+                priority
+              />
               <p>
                 <strong>タイプ:</strong> {veg.name}
               </p>
